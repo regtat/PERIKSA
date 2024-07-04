@@ -4,8 +4,6 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -22,6 +20,8 @@ class User extends Authenticatable
         'email',
         'password',
         'nim',
+        'nip',
+        'name',
     ];
 
     /**
@@ -47,8 +47,8 @@ class User extends Authenticatable
     }
 
     //eloquent relasi
-    public function mahasiswa(): BelongsTo{
-        return $this->belongsTo(MahasiswaModel::class, 'nim','nim');    //'foreign','local'
-    }
-    
+    /*public function mahasiswa(): BelongsTo{
+        return $this->belongsTo(Mahasiswa::class, 'nim','nim');    //'foreign','local'
+    }*/
+
 }

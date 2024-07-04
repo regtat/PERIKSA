@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\MahasiswaModel;
+use App\Models\Mahasiswa;
 use App\Models\User;
-
+use App\Models\WD;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\View\View;
 
@@ -15,19 +15,20 @@ use Illuminate\Http\Request;
 class UserController extends Controller
 {
     use ValidatesRequests;
-    // protected $mahasiswa;
-    // public function __construct()
-    // {
-    //     $this->mahasiswa = new MahasiswaModel();
-    // }
-    /**
-     * Display a listing of the resource.
-     */
+    protected $title;   //title bs diakses oleh metode dalam class yang sama atau class turunannya
+    public function __construct()
+    {
+        $this->title = 'AKUN';
+    }
     public function index(): View
     {
+        $title = $this->title;
         //relasi/join
-        $users = User::with('mahasiswa')->latest()->paginate(5);
-        return view('user.index', compact('users'));
+        /*$users = User::with('mahasiswa')->latest()->paginate(5);
+        return view('user.index', compact('users', 'title'));*/
+        $users = User::latest()->paginate(5);
+        return view('admin.user.index', compact('users', 'title'));
+
     }
 
     /**
@@ -35,25 +36,26 @@ class UserController extends Controller
      */
     public function create(): View
     {
-        $mahasiswa=MahasiswaModel::all();
-        return view('user.create', compact('mahasiswa'));
+
+        $title = $this->title;
+        return view('admin.user.create', compact('title'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         //validasi form
         $this->validate($request, [
-            'nim'=>'required|string',
+            'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|max:50',
+            'password' => 'required|string|min:8',
         ]);
         //create
         User::create([
-            'nim'=>$request->nim,
+            'name' => $request->name,
             'email' => $request->email,
-            'password' => $request->password,
+            'password' => bcrypt($request->password),
         ]);
-        return redirect()->route('user.index')->with(['success' => 'Data Berhasil Disimpan']);
+        return redirect()->route('admin.user.index')->with(['success' => 'Data Berhasil Ditambahkan']);
     }
 
     /**
@@ -71,8 +73,9 @@ class UserController extends Controller
     {
         //get mahasiwsa by nim
         $users = User::findOrFail($id);
-        //render view mahasiswa
-        return view('user.edit', compact('users'));
+        $title = $this->title;
+        //render view user
+        return view('admin.user.edit', compact('users', 'title'));
     }
 
     /**
@@ -81,18 +84,32 @@ class UserController extends Controller
     public function update(Request $request, string $id): RedirectResponse
     {
         $this->validate($request, [
-            'email' => 'required|email|max:50',
-            'password' => 'nullable|min:8|max:50',
+            'name' => 'string',
+            'email' => 'email',
+            // 'password' => 'nullable|min:8',
         ]);
 
         $users = User::find($id);
 
-        //update mahasiswa
+        //update user
         $users->update([
+            'name' => $request->name,
             'email' => $request->email,
-            'password' => $request->password,
+            // 'password' => $request->password,
         ]);
-        return redirect()->route('user.index')->with(['success' => 'Data Berhasil Diubah']);
+        $mahasiswa = Mahasiswa::where('nim', $users->nim)->first();
+        $wd = WD::where('nip', $users->nip)->first();
+        if ($mahasiswa) {
+            $mahasiswa->update([
+                'nama' => $request->name,
+            ]);
+        }
+        if ($wd) {
+            $wd->update([
+                'nama' => $request->name,
+            ]);
+        }
+        return redirect()->route('admin.user.index')->with(['success' => 'Data Berhasil Diubah']);
     }
 
     /**
@@ -100,11 +117,20 @@ class UserController extends Controller
      */
     public function destroy(string $id): RedirectResponse
     {
-        //get user by nim
+        //get user by id
         $users = User::findOrFail($id);
         //delete
         $users->delete();
+        $mahasiswa = Mahasiswa::where('nim', $users->nim)->first();
+        $wd = WD::where('nip', $users->nip)->first();
+        if ($mahasiswa) {
+            $mahasiswa->delete();
+        }
+        if ($wd) {
+            $wd->delete();
+        }
 
-        return redirect()->route('user.index')->with(['success' => 'Data Berhasil Dihapus']);
+        return redirect()->route('admin.user.index')->with(['success' => 'Data Berhasil Dihapus']);
     }
+
 }
